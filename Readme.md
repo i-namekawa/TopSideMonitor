@@ -9,6 +9,8 @@ Tested on Python 2.7 series on Windows 7.
 
 Install numpy, scipy, wxpython, opencv, matplotlib, xlrd, xlwt.
 
+Copy some reasonably new ffmpeg.exe binary into resourse folder.
+
 (Optional)
 For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
 
