@@ -38,22 +38,29 @@ def twocameras(camerafps, videofps, datafolder, maxTime, qscale, textOn, textcol
         frame = cam.grab_next_frame_blocking()
         height, width = frame.shape
     else:
-        cam = cv2.VideoCapture(-1) # -1: if there more than one, a dialog to choose will pop up
+        # -1: if there more than one, a dialog to choose will pop up
+        cam = cv2.VideoCapture(0)
         success, frame = cam.read()
         if success:
             height, width, _ = frame.shape
             print height, width
         else:
             print 'top webcam failed to initialize'
+            return False
     
     # side view camera
-    webcam = cv2.VideoCapture(-1)  # -1: choose a 2nd camera from dialog
+    if not cam_iface:
+        webcam = cv2.VideoCapture(1)
+    else:
+        # -1: choose a 2nd camera from dialog
+        webcam = cv2.VideoCapture(-1)
     success, frame = webcam.read()
     if success:
         height, width, _ = frame.shape
         print height, width
     else:
         print 'side webcam failed to initialize'
+        return False
     webcam.set(cv2.cv.CV_CAP_PROP_FPS, camerafps)
     
 
@@ -270,6 +277,8 @@ def twocameras(camerafps, videofps, datafolder, maxTime, qscale, textOn, textcol
         parent.gauge.SetValue(0)
         parent.LED.SetValue('0')
         parent.Refresh()
+
+    return True
 
 
 if __name__ == '__main__':

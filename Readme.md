@@ -32,7 +32,7 @@ For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/proj
        1. Open a video file from Menu File -> Open or just drag and drop it.
        2. Register a fish name (eg. GCaMP6_fish01) and [Register fish/Save] and choose it from the pull down menu on right. You can use [MS222] button to remove the fish.
        3. Set ROI for TopView by adjusting parameters starting with TV (Top View). Do this for Side View as well.
-       4. If more than one fish is in the video, you can repeat 2-4. to regisrer more.
+       4. If more than one fish is in the video, you can repeat 2 and 3. to regisrer more.
        5. Press [Play/Track] to start tracking.
        6. Press [Register fish/Save] when tracking is done.
 
