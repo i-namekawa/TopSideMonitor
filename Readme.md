@@ -26,7 +26,7 @@ For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/proj
 
 * multitrack.py
 
-   This is for analysing the video recorded with TopSideMonitor_FrontEnd.py.
+   This is for analysing the video recorded with TopSideMonitor_FrontEnd.py. It tracks fish with a simple background subtraction method (opencv MOG) and extracts from 3D fish trajectory various parameters to characterize feeding behavior.
      
      Tracking
        1. Open a video file from Menu File -> Open or just drag and drop it.
@@ -40,3 +40,9 @@ For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/proj
 
        1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
        2. Menu Alysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
+
+
+License
+=======
+
+TopSideMonitor is licensed under a 3-clause BSD style license - see the LICENSE.txt file.
