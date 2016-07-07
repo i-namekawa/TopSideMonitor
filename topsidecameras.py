@@ -5,9 +5,12 @@ import cv2
 import numpy as np
 
 cwd = os.getcwd()
-import motmot.cam_iface.cam_iface_ctypes as cam_iface
-if not cam_iface.get_num_cameras():
-    print 'No IEEE1394 camera found'
+try:
+    import motmot.cam_iface.cam_iface_ctypes as cam_iface
+    if not cam_iface.get_num_cameras():
+        print 'No IEEE1394 camera found'
+        cam_iface = None
+except ImportError:
     cam_iface = None
 os.chdir(cwd)
 
