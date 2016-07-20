@@ -1231,21 +1231,19 @@ class wxGui(wx.Frame):
                     if TVx1<=x<=TVx2 and TVy1<=y<=TVy2:
                         print 'head x,y corrected'
                         self.TVtracking[fish][n,3:5] = (x,y)
-                        # self.curframe += 1
-                        self.OnSliderSpin(None, self.curframe)
+                        self.OnSliderSpin(None, self.curframe) # refresh window
                     else:
                         print 'outside of any ROIs'
                 else:
                     if TVx1<=x<=TVx2 and TVy1<=y<=TVy2:
                         self.TVtracking[fish][n,:2] = (x,y)
-                        self.curframe += 1
-                        self.OnSliderSpin(None, self.curframe)
+                        self.curframe += self.frameStepSpin.GetValue()
                     elif SVx1<=x<=SVx2 and SVy1<=y<=SVy2:
                         self.SVtracking[fish][n,:2] = (x,y)
-                        self.curframe += 1
-                        self.OnSliderSpin(None, self.curframe)
+                        self.curframe += self.frameStepSpin.GetValue()
                     else:
                         print 'outside of any ROIs'
+                    self.OnSliderSpin(None, self.curframe)
             self.updateFrame()
 
     def OnRingpolybtn(self, events):
