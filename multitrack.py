@@ -1,5 +1,5 @@
 from __future__ import division
-import os, sys, subprocess
+import imp, os, sys, subprocess
 from glob import glob
 import cPickle as pickle
 
@@ -16,12 +16,13 @@ import wx.lib.agw.multidirdialog as MDD
 
 from plotting import *
 
-# TWOCHOICE = True
-TWOCHOICE = False
+TWOCHOICE = False   # keep this "False"
+# TWOCHOICE = True  # experimental flag for two choice task. stay away.
 
 
-# TODO: 
-# not woking with cv2 3.1.0-dev. 
+
+# TVtracking[ fishname ]  6 cols filled with nan
+# headx, heady, blobarea, chestx, chesty, bool_good_for_dnn_training
 
 
 def interporatePolyOverFrames(ringpolyDict, nmax_frame):
@@ -58,31 +59,45 @@ class RedirectText(object):  # from a blog: www.blog.pythonlibrary.org
     def write(self,string):
         self.out.SetInsertionPointEnd()  # go to the bottom
         self.out.WriteText(string)
+    def flush(self):
+        pass
 
 class FileDrop(wx.FileDropTarget):
     def __init__(self, parent):
         wx.FileDropTarget.__init__(self)
         self.parent = parent
     def OnDropFiles(self, x, y, filenames):
-        if filenames[0].endswith('.avi'):
-            self.parent.LoadAvi(None, filenames[0])
+        fp = filenames[0]
+        if fp.endswith('.avi'):
+            self.parent.LoadAvi(None, fp)
             self.parent.OnnamedWinbtn(None)
             return
-        elif filenames[0].endswith('.xlsx'):
-            self.parent.LoadExcel(filenames[0])
-        elif filenames[0].endswith('.pickle'):
-            # loading previous fish names
-            self.parent.choiselist = self.parent.getFishnamesfromPickle(None, filenames[0])
-            self.parent.OnChoice(events=None, settingfp=filenames[0])
-            self.parent.OnMogParams(None, 'temp') # init self.mog with the params in GUI
-            self.parent.RefreshChoise(self.parent.targetfish, self.parent.choiselist)
-            self.parent.updateCmap()
-            self.parent.OnSpin(None)
+        elif fp.endswith('.xlsx'):
+            self.parent.LoadExcel(fp)
+        elif fp.endswith('.pickle'):
+            
+            basename = os.path.basename(fp)
+            if basename.startswith('fishmodel_'):
+                _id = wx.NewId()
+                name = basename[10:][:-7]
+                self.parent.fishmodels[_id] = (name, fp)
+                # self.parent.Models.Append(_id, name, kind=wx.ITEM_CHECK)
+                self.parent.Models.Append(_id, name, kind=wx.ITEM_RADIO)
+                self.parent.Bind(wx.EVT_MENU, self.parent.OnModelSelect, id=_id)
+                print name + ' added to Models menu.'
 
+            else:
+                # loading previous fish names
+                self.parent.choiselist = self.parent.getFishnamesfromPickle(None, filenames[0])
+                self.parent.OnChoice(events=None, settingfp=filenames[0])
+                self.parent.OnMogParams(None, 'temp') # init self.mog with the params in GUI
+                self.parent.RefreshChoise(self.parent.targetfish, self.parent.choiselist)
+                self.parent.updateCmap()
+                self.parent.OnSpin(None)
 
 class wxGui(wx.Frame):
     def __init__(self, pos):
-        wx.Frame.__init__(self, None, pos=pos, title='Parameter interface')
+        wx.Frame.__init__(self, None, pos=pos, title='TopSideMonitor')
         self.SetDropTarget(FileDrop(self))
         self.SetIcon(fishicon)
 
@@ -91,6 +106,7 @@ class wxGui(wx.Frame):
         self.curframe = 0
         self.namedWindow = False
         self.clicks = []
+        self.net = None
 
         # Build menu bar
         menuBar = wx.MenuBar()
@@ -112,7 +128,6 @@ class wxGui(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OngetPDFs, id=201)
         AnalysisMenu.Append(203, "Summary PDF report from multiple folders")
         self.Bind(wx.EVT_MENU, self.OnSummaryPDF, id=203)
-
         
         self.OptionMenu = wx.Menu()
         self.OptionMenu.Append(301, "Copy current event data to all other fish")
@@ -122,12 +137,32 @@ class wxGui(wx.Frame):
         self.connectSplitBlobs = self.OptionMenu.Append(304, "Connect split fish under ring", "Check Item", wx.ITEM_CHECK)
         self.connectSplitBlobs.Check(True)
 
-        self.OptionMenu.Append(305, "low pass filter headx, heady around here")
+        self.OptionMenu.Append(305, "low pass filter headx, heady around the current frame")
         self.Bind(wx.EVT_MENU, self.Onfilterheadxy, id=305)
+
+        self.Models = wx.Menu()
+        self.Models.Append(399, 'Train model / Export training data as npz')
+        self.Bind(wx.EVT_MENU, self.OnModelSelect, id=399)
+        self.Models.Append(398, 'Export weights as npz or pickle the model')
+        self.Bind(wx.EVT_MENU, self.OnModelSelect, id=398)
+        self.Models.AppendSeparator()
+        self.Models.Append(400, 'None', kind=wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.OnModelSelect, id=400)
+        self.fishmodels = {}
+        for n, m in enumerate( #pickle or py file
+            glob('./models/lasagne/fishmodel_*.py')+glob('./models/lasagne/fishmodel_*.pickle')):
+            name = '.'.join('_'.join(os.path.basename(m).split('fishmodel_')[1:]).split('.')[:-1])
+            if name:
+                _id = 401+n
+                self.fishmodels[_id] = (name, m)
+                self.Models.Append(_id, name, kind=wx.ITEM_RADIO)
+                # self.Models.Append(_id, name, kind=wx.ITEM_CHECK)
+                self.Bind(wx.EVT_MENU, self.OnModelSelect, id=_id)
 
         menuBar.Append(FileMenu, "&File")
         menuBar.Append(AnalysisMenu, "&Analysis")
         menuBar.Append(self.OptionMenu, "&Options")
+        menuBar.Append(self.Models, "&Models")
         self.SetMenuBar(menuBar)
 
         # File history
@@ -200,6 +235,13 @@ class wxGui(wx.Frame):
         self.mog_backgroundRatio.SetDigits(2)
         self.mog_noiseSigma = wx.SpinCtrl(self, size=(85,-1), min=0, max=960, initial=12)
         self.mog_learning_rate = wx.SpinCtrl(self, size=(85,-1), min=-99, max=99, initial=-1)
+    
+        # switched from MOG opencv2.4 to MOG2 in opencv3 these params no longer needed.
+        self.mog_history.Enable(False)
+        self.mog_nmixtures.Enable(False)
+        self.mog_backgroundRatio.Enable(False)
+        self.mog_noiseSigma.Enable(False)
+        self.mog_learning_rate.Enable(False)
 
         self.event_label = wx.SearchCtrl(self, size=(90,25))
         self.event_label.SetDescriptiveText('Define label here')
@@ -402,8 +444,7 @@ class wxGui(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             folders = dlg.GetPaths()
             dlg.Destroy()
-            print 'folders',folders
-
+            print 'folders', folders
 
             pickle_files = []
             for eachfolder in folders:
@@ -453,7 +494,7 @@ class wxGui(wx.Frame):
                                 self.clipfp, 
                                 # -1, # will open a dialog to choose codec
                                 # cv2.cv.FOURCC('M','J','P','G'), 
-                                cv2.cv.FOURCC('D','I','V','3'),  # 2260 kb 250 frames
+                                cv2.VideoWriter_fourcc('D','I','V','3'),  # 2260 kb 250 frames
                                 fps=int(self.fps), 
                                 frameSize = self.framesize[::-1], # opencv wants w,h
                                 isColor=True
@@ -712,7 +753,7 @@ class wxGui(wx.Frame):
             self.fgmask = np.zeros(self.framesize, dtype=np.uint8)
         self.clipout = np.zeros(self.framesize, dtype=np.uint8)
         cx,cy = (TVx1+TVx2)/2, (TVy1+TVy2)/2
-        boxTV = cv2.cv.BoxPoints(((cx,cy), (TVx2-TVx1, TVy2-TVy1), TVH))
+        boxTV = cv2.boxPoints(((cx,cy), (TVx2-TVx1, TVy2-TVy1), TVH))
         cv2.rectangle(self.clipout, (SVx1, SVy1), (SVx2, SVy2), 255, thickness=-1)
         if self.namedWindow and events:
             self.updateFrame()
@@ -728,20 +769,8 @@ class wxGui(wx.Frame):
     def OnMogParams(self, events, fish='temp'):
         history, nmixtures, backgroundRatio, noiseSigma, self.learning_rate = self.getMogParams()
         # Mixture of Gaussian
-        self.mogTV[fish] = cv2.BackgroundSubtractorMOG(
-            history = history,                  # normally 100
-            nmixtures = nmixtures,              # normally 3-5
-            backgroundRatio = backgroundRatio,  # normally 0.1-0.9
-            noiseSigma = noiseSigma             # <7 starts to deteriorate, 15 is good
-            )
-        self.mogSV[fish] = cv2.BackgroundSubtractorMOG(
-            history = history,
-            nmixtures = nmixtures,
-            backgroundRatio = backgroundRatio,
-            noiseSigma = noiseSigma
-            )
-        print 'MOG settings: history=%d, nmixtures=%d, backgroundRatio=%1.2f, noiseSigma=%d, learning_rate=%d' % (
-                    history, nmixtures, backgroundRatio, noiseSigma, self.learning_rate)
+        self.mogTV[fish] = cv2.createBackgroundSubtractorMOG2(history=history, detectShadows=True) # normally 100
+        self.mogSV[fish] = cv2.createBackgroundSubtractorMOG2(history=history, detectShadows=True)
 
         TVx1,TVy1,TVx2,TVy2,TVH,SVx1,SVy1,SVx2,SVy2,SVx3,SVy3 = self.getSpinCtrls()
         self.fgmaskTV[fish] = np.zeros((TVy2-TVy1,TVx2-TVx1), dtype=np.uint8)
@@ -750,7 +779,7 @@ class wxGui(wx.Frame):
         # train the mog
         h,w = self.framesize
         for n in np.arange(self.nmax_frame, self.nmax_frame*0.1, self.nmax_frame/20.0):
-            self.cap.set(cv2.cv.CV_CAP_PROP_POS_FRAMES, n-1)
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, n-1)
             success, frame = self.cap.read()
             self.mogTV[fish].apply(frame[TVy1:TVy2,TVx1:TVx2,0], self.fgmaskTV[fish], self.learning_rate)
             self.mogSV[fish].apply(frame[SVy1:SVy2,SVx1:SVx2,0], self.fgmaskSV[fish], self.learning_rate)
@@ -758,7 +787,7 @@ class wxGui(wx.Frame):
         self.SVnoiseSize = self.noise_blob_sizeSV.GetValue()
 
     def OnSliderSpin(self, events, n=None):
-        print 'OnSliderSpin'
+        # print 'OnSliderSpin'
         if n:
             self.sliderSpin.SetValue(n)
         else:
@@ -952,8 +981,6 @@ class wxGui(wx.Frame):
             if fish not in self.mogTV.keys():
                 self.OnMogParams(None, fish)
             self.playPausebtn.Enable()
-
-        print 'self.getFishnamesfromPickle(fname)', self.getFishnamesfromPickle(fname)
 
         if fish == 'all':
             self.inflowTubebtn.Disable()
@@ -1226,11 +1253,12 @@ class wxGui(wx.Frame):
                     print 'outside of any ROIs'
 
             elif self.correctbtn.GetValue():
-                # print flags
-                if flags == cv2.EVENT_FLAG_CTRLKEY or flags==9: # cv2.EVENT_FLAG_CTRLKEY is 8L somehow but I get 9...
+
+                if flags == cv2.EVENT_FLAG_CTRLKEY or flags==9: # cv2.EVENT_FLAG_CTRLKEY is 8L somehow but I get 9... it's a bug in opencv 2.4
                     if TVx1<=x<=TVx2 and TVy1<=y<=TVy2:
                         print 'head x,y corrected'
                         self.TVtracking[fish][n,3:5] = (x,y)
+                        self.TVtracking[fish][n,5] = 1 # half done for dnn training
                         self.OnSliderSpin(None, self.curframe) # refresh window
                     else:
                         print 'outside of any ROIs'
@@ -1238,6 +1266,8 @@ class wxGui(wx.Frame):
                     if TVx1<=x<=TVx2 and TVy1<=y<=TVy2:
                         self.TVtracking[fish][n,:2] = (x,y)
                         self.curframe += self.frameStepSpin.GetValue()
+                        if self.TVtracking[fish][n,5] == 1:
+                            self.TVtracking[fish][n,5] = 2 # ready for dnn training
                     elif SVx1<=x<=SVx2 and SVy1<=y<=SVy2:
                         self.SVtracking[fish][n,:2] = (x,y)
                         self.curframe += self.frameStepSpin.GetValue()
@@ -1296,8 +1326,8 @@ class wxGui(wx.Frame):
             GL = self.groundLevel.GetValue()
             if GL>0: # clip the bottom
                 frame = frame[:GL,:,:]
-            self.nmax_frame = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT)
-            self.fps = self.cap.get(cv2.cv.CV_CAP_PROP_FPS)
+            self.nmax_frame = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            self.fps = self.cap.get(cv2.CAP_PROP_FPS)
             self.framesize = frame.shape[:2]
             self.clipfp = False
             self.lastContour = None
@@ -1333,7 +1363,7 @@ class wxGui(wx.Frame):
             # stationary background
             bg = np.zeros(self.framesize)
             for n in np.linspace(self.nmax_frame-1, 0, 20):
-                self.cap.set(cv2.cv.CV_CAP_PROP_POS_FRAMES, n)
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
                 _, frame = self.cap.read()
                 if GL>0:
                     bg = np.dstack((bg,frame[:GL,:,0]))
@@ -1387,9 +1417,10 @@ class wxGui(wx.Frame):
             return []
 
     def updateFrame(self):
+
         n = self.curframe
         self.sb.SetStatusText('Time %02d:%02d' % (n/self.fps/60, n/self.fps%60))
-        self.cap.set(cv2.cv.CV_CAP_PROP_POS_FRAMES, n-1)
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, n-1)
         success, frame = self.cap.read()
         if success:
             h,w = self.framesize
@@ -1431,7 +1462,7 @@ class wxGui(wx.Frame):
         TVx1,TVy1,TVx2,TVy2,TVH,SVx1,SVy1,SVx2,SVy2,SVx3,SVy3 = ROIcoords
 
         def findFish(fg):
-            contours, hierarchy = cv2.findContours( fg, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE )
+            _, contours, hierarchy = cv2.findContours( fg, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE )
             contours = [c for c in contours if cv2.contourArea(c.astype(int)) > self.TVnoiseSize]
             cntrs = [np.dstack((c[:,0,0] + TVx1, c[:,0,1] + TVy1)).reshape(c.shape) for c in contours]
             centers = [f.mean(axis=0)[0].tolist() for f in cntrs]
@@ -1509,7 +1540,7 @@ class wxGui(wx.Frame):
                         fishfg = np.zeros_like(frame[TVy1:TVy2, TVx1:TVx2,0])
                         for g in good:
                             cv2.fillConvexPoly(fishfg, g, 1)
-                        vx, vy, x0, y0 = cv2.fitLine(tobemerged,cv2.cv.CV_DIST_HUBER, 0, 0.01, 0.01)
+                        vx, vy, x0, y0 = cv2.fitLine(tobemerged,cv2.DIST_HUBER, 0, 0.01, 0.01)
                         cx = tobemerged[:,0,0]
                         cy = tobemerged[:,0,1]
                         c = y0 - (vy/vx) * x0
@@ -1545,73 +1576,97 @@ class wxGui(wx.Frame):
 
 
             # now picking the fish contour
-            self.TVtracking[fish][n,:2] = (np.nan, np.nan)
-            self.TVtracking[fish][n,2] = np.nan
-            tvx,tvy = None, None
-            if centers:
-                
-                bydist = [np.sqrt( ((prepos-c)**2).sum() ) for c in centers]
-                bysize = [a-avgsize if (a-avgsize)>0 else (avgsize-a)/3 for a in areas]
-                ind = np.argmin( [s+5*d for s,d in zip(bysize, bydist)] )
-                
-                TVContour, TVpos, TVarea = cntrs[ind], centers[ind], areas[ind]
-                self.TVtracking[fish][n,:2] = TVpos
-                self.TVtracking[fish][n,2] = TVarea
-                tvx,tvy = map(int, TVpos)
-                # print 'TVarea avgsize areas', TVarea, int(avgsize)
-                
-                # orientation esstimation here
-                if contours[ind].shape[0] > 5 and avgsize*0.15<TVarea<avgsize*1.5:
+            
+            # if a dnn model is available, clip frame centered at hx,hy from existing tracking data or prepos
+            if self.net is not None:
 
-                    vx, vy, x0, y0 = cv2.fitLine(contours[ind], cv2.cv.CV_DIST_HUBER, 0, 0.01, 0.01)
-                    cx, cy = contours[ind][:,0,0], contours[ind][:,0,1]
-                    c = y0 - (vy/vx) * x0
-                    x1, x2 = cx.min(), cx.max()
-                    if x2-x1 > 15:
-                        y1 = x1 * (vy/vx) + c
-                        y2 = x2 * (vy/vx) + c
-                        step = 1 if (x2-x1) < 20 else (x2-x1)/20
-                        X = np.arange(x1,x2,step)
-                        Y = X*(vy/vx) + c
-                    else: # vertical fish
-                        y1, y2 = cy.min(), cy.max()
-                        x1 =  (y1-c) / (vy/vx) 
-                        x2 =  (y2-c) / (vy/vx) 
-                        step = 1 if (y2-y1) < 20 else (y2-y1)/20
-                        Y = np.arange(y1,y2,step)
-                        X = (Y-c) / (vy/vx)
+                if not np.isnan(self.TVtracking[fish][n,3]):
+                    pos = self.TVtracking[fish][n,3:5]
+                elif not np.isnan(prepos).any():
+                    pos = prepos
 
-                    # guess head location by body thickness
-                    overlap = []
-                    for _x, _y in zip(X,Y):
-                        canvas = np.zeros_like(self.fgmaskTV[fish])
-                        cv2.circle(canvas, (int(_x),int(_y)), 12, 255, -1)  # 9 is hardcoded radius 
-                        overlap.append(self.fgmaskTV[fish][canvas>0].sum())
-                        # print _x, _y, overlap
+                chestx, chesty, headx, heady = self.dnnPredict(fish, frame, ROIcoords, pos)
+                if np.isnan(headx):
+                    print 'dnn failed?', headx, heady
+                else:
+                    x0, y0, tvx, tvy = map(int, [chestx, chesty, headx, heady])
+                    self.TVtracking[fish][n,0] = x0
+                    self.TVtracking[fish][n,1] = y0
+                    self.TVtracking[fish][n,3] = tvx
+                    self.TVtracking[fish][n,4] = tvy
+
+            else:
+                self.TVtracking[fish][n,:2] = (np.nan, np.nan)
+                self.TVtracking[fish][n,2] = np.nan
+                self.TVtracking[fish][n,5] = np.nan
+                tvx, tvy = None, None
+
+                if centers:
                     
-                    ov = np.array(overlap)
-                    # simple peak usually works the best
-                    ind_max = ov.argmax()
-                    # delta overlap typically has one broad peak around head
-                    dov = np.diff(ov)
-                    ind_diff = dov.argmax()
-                    # slope based
-                    ind_half = int(ov.size/2)
-                    if ov[:ind_half].sum() > ov[ind_half:].sum():
-                        ind_slope = int(ov.size/4)
-                    else:
-                        ind_slope = int(ov.size/4*3)
-                    # democratic decision
-                    # print [ind_max, ind_diff, ind_slope]
-                    head_ind = np.median([ind_max, ind_diff, ind_slope])
+                    bydist = [np.sqrt( ((prepos-c)**2).sum() ) for c in centers]
+                    bysize = [a-avgsize if (a-avgsize)>0 else (avgsize-a)/3 for a in areas]
+                    ind = np.argmin( [s+5*d for s,d in zip(bysize, bydist)] )
+                    
+                    TVContour, TVpos, TVarea = cntrs[ind], centers[ind], areas[ind]
+                    if self.net is None:
+                        self.TVtracking[fish][n,:2] = TVpos
+                        self.TVtracking[fish][n,2] = TVarea
+                        tvx,tvy = map(int, TVpos)
+                    # print 'TVarea avgsize areas', TVarea, int(avgsize)
+                    
+                    # orientation esstimation here
 
-                    headx = X[head_ind] + TVx1
-                    heady = Y[head_ind] + TVy1
-                    x0 += TVx1
-                    y0 += TVy1
+                    if contours[ind].shape[0] > 5 and avgsize*0.15<TVarea<avgsize*1.5:
 
-                    self.TVtracking[fish][n,3] = headx 
-                    self.TVtracking[fish][n,4] = heady 
+                        vx, vy, x0, y0 = cv2.fitLine(contours[ind], cv2.DIST_HUBER, 0, 0.01, 0.01)
+                        cx, cy = contours[ind][:,0,0], contours[ind][:,0,1]
+                        c = y0 - (vy/vx) * x0
+                        x1, x2 = cx.min(), cx.max()
+                        if x2-x1 > 15:
+                            y1 = x1 * (vy/vx) + c
+                            y2 = x2 * (vy/vx) + c
+                            step = 1 if (x2-x1) < 20 else (x2-x1)/20
+                            X = np.arange(x1,x2,step)
+                            Y = X*(vy/vx) + c
+                        else: # vertical fish
+                            y1, y2 = cy.min(), cy.max()
+                            x1 =  (y1-c) / (vy/vx) 
+                            x2 =  (y2-c) / (vy/vx) 
+                            step = 1 if (y2-y1) < 20 else (y2-y1)/20
+                            Y = np.arange(y1,y2,step)
+                            X = (Y-c) / (vy/vx)
+
+                        # guess head location by body thickness
+                        overlap = []
+                        for _x, _y in zip(X,Y):
+                            canvas = np.zeros_like(self.fgmaskTV[fish])
+                            cv2.circle(canvas, (int(_x),int(_y)), 12, 255, -1)  # 9 is hardcoded radius 
+                            overlap.append(self.fgmaskTV[fish][canvas>0].sum())
+                            # print _x, _y, overlap
+                        
+                        ov = np.array(overlap)
+                        # simple peak usually works the best
+                        ind_max = ov.argmax()
+                        # delta overlap typically has one broad peak around head
+                        dov = np.diff(ov)
+                        ind_diff = dov.argmax()
+                        # slope based
+                        ind_half = int(ov.size/2)
+                        if ov[:ind_half].sum() > ov[ind_half:].sum():
+                            ind_slope = int(ov.size/4)
+                        else:
+                            ind_slope = int(ov.size/4*3)
+                        # democratic decision
+                        # print [ind_max, ind_diff, ind_slope]
+                        head_ind = np.median([ind_max, ind_diff, ind_slope])
+
+                        headx = X[head_ind] + TVx1
+                        heady = Y[head_ind] + TVy1
+                        x0 += TVx1
+                        y0 += TVy1
+
+                        self.TVtracking[fish][n,3] = headx
+                        self.TVtracking[fish][n,4] = heady
 
         else: # replay mode
             tvx,tvy = self.TVtracking[fish][n,:2].astype(np.int)
@@ -1624,47 +1679,53 @@ class wxGui(wx.Frame):
 
         # now adjust the ROI for SV using the recent TVpos tvx,tvy
         tB = self.topBorder
-        if tvx and TVx2-TVx1 >= TVy2-TVy1: # TopView horizontal case
-            factor = self.depth.GetValue()
-            if TWOCHOICE:
-                newY =  int(SVy2 -        (SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1) )
-                newY2 = int(SVy1 + factor*(SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1) )
+        factor = self.depth.GetValue()
+
+        # TopView horizontal case
+        if tvx and TVx2-TVx1 >= TVy2-TVy1: 
+            
+            if TWOCHOICE: # this is not really used. will be always False.
+                newY =  int(SVy2 -        (SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1))
+                newY2 = int(SVy1 + factor*(SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1))
             else:
-                newY =  int(SVy3        + (SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1) )
-                newY2 = int(SVy1 + factor*(SVy2-SVy3) - factor*(SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1) )
+                newY =  int(SVy3        + (SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1))
+                newY2 = int(SVy1 + factor*(SVy2-SVy3) - factor*(SVy2-SVy3) * (tvx-TVx1) / (TVx2-TVx1))
             self.fgmaskSV[fish][:newY2-SVy1, :] = 0
             self.fgmaskSV[fish][newY-SVy1:, :] = 0
 
             if SVx3 > w/2: # right side of screen
                 if TWOCHOICE:
-                    newX = int(SVx1 + (SVx2 - SVx3) * (tvx-TVx1) / (TVx2-TVx1) )
+                    newX = int(SVx1 + (SVx2 - SVx3) * (tvx-TVx1) / (TVx2-TVx1))
                     self.fgmaskSV[fish][:, :newX-SVx1] = 0
                 else:
-                    newX = int(SVx3 + (SVx2 - SVx3) * (tvx-TVx1) / (TVx2-TVx1) )
+                    newX = int(SVx3 + (SVx2 - SVx3) * (tvx-TVx1) / (TVx2-TVx1))
                     self.fgmaskSV[fish][:, newX-SVx1:] = 0
             
             else:
                 if TWOCHOICE:
-                    newX = int(SVx1 + (SVx3 - SVx1) * (tvx-TVx1) / (TVx2-TVx1) )
+                    newX = int(SVx1 + (SVx3 - SVx1) * (tvx-TVx1) / (TVx2-TVx1))
                     self.fgmaskSV[fish][:, :newX-SVx1] = 0
                 else:
-                    newX = int(SVx3 - (SVx3 - SVx1) * (tvx-TVx1) / (TVx2-TVx1) )
+                    newX = int(SVx3 - (SVx3 - SVx1) * (tvx-TVx1) / (TVx2-TVx1))
                     self.fgmaskSV[fish][:, :newX-SVx1] = 0
-            
 
+        # TopView vertical case
+        elif tvy and TVx2-TVx1 < TVy2-TVy1:  
 
-        elif tvy and TVx2-TVx1 < TVy2-TVy1:  # TopView vertical case
-            newY = int(SVy3 + (SVy2-SVy3) * (tvy - TVy1) / (TVy2-TVy1) )
+            newY = int(SVy3 + (SVy2-SVy3) * (tvy - TVy1) / (TVy2-TVy1))
+            newY2 = int(SVy1 + factor*(SVy2-SVy3) - factor*(SVy2-SVy3) * (tvy-TVy1) / (TVy2-TVy1))
+            self.fgmaskSV[fish][:newY2-SVy1, :] = 0
             self.fgmaskSV[fish][newY-SVy1:, :] = 0
             if SVx3 > w/2: # right side of screen
-                newX = int(SVx3 + (SVx2 - SVx3) * (tvy - TVy1) / (TVy2-TVy1) )
+                newX = int(SVx3 + (SVx2 - SVx3) * (tvy - TVy1) / (TVy2-TVy1))
                 self.fgmaskSV[fish][:, newX-SVx1:] = 0
             else:
-                newX = int(SVx3 - (SVx3 - SVx1) * (tvy - TVy1) / (TVy2-TVy1) )
+                newX = int(SVx3 - (SVx3 - SVx1) * (tvy - TVy1) / (TVy2-TVy1))
                 self.fgmaskSV[fish][:, :newX-SVx1] = 0
         
         else:
             newX, newY, newY2 = None, None, None
+
 
         if self.ringpolySVArray[fish] is not None:
             rx,ry,rh,rw,rangle = self.ringpolySVArray[fish][n,:]
@@ -1686,7 +1747,7 @@ class wxGui(wx.Frame):
         if self.TrackOnline:
             centers = None
             if trackingmode != 2:   # 0 use both; 1 force mog; 2 force bg
-                contours, hierarchy = cv2.findContours( self.fgmaskSV[fish].copy(),
+                _, contours, hierarchy = cv2.findContours( self.fgmaskSV[fish].copy(),
                                             cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE )
                 cntrs = [np.dstack((c[:,0,0] + SVx1, c[:,0,1] + SVy1)).reshape(c.shape)
                             for c in contours if cv2.contourArea(c.astype(int)) > self.SVnoiseSize]
@@ -1694,8 +1755,8 @@ class wxGui(wx.Frame):
                 areas = [cv2.contourArea(c.astype(int)) for c in cntrs]
                 if not centers and self.namedWindow:
                     __areas = [cv2.contourArea(c.astype(int)) for c in contours]
-                    if __areas:
-                        print n, 'SV', [a for a in __areas if a]
+                    # if __areas:
+                        # print n, 'SV', [a for a in __areas if a]
 
             if (not centers and trackingmode != 1) or trackingmode == 2:
                 _temp = cv2.absdiff(
@@ -1712,7 +1773,7 @@ class wxGui(wx.Frame):
                 _temp = _temp.astype(np.uint8)
                 if self.showfgmask:
                     self.fgmaskSV[fish] = _temp.copy()
-                contours, hierarchy = cv2.findContours(_temp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+                _, contours, hierarchy = cv2.findContours(_temp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
                 cntrs = [np.dstack((c[:,0,0] + SVx1, c[:,0,1] + SVy1)).reshape(c.shape)
                             for c in contours if cv2.contourArea(c.astype(int)) > self.TVnoiseSize]
                 centers = [f.mean(axis=0)[0] for f in cntrs]
@@ -1720,7 +1781,7 @@ class wxGui(wx.Frame):
 
             self.SVtracking[fish][n,:2] = (np.nan, np.nan)
             self.SVtracking[fish][n,2] = np.nan
-            svx,svy = None, None
+            svx, svy = None, None
             if centers:
                 if np.isnan(self.SVtracking[fish][st:n, :2]).all():
                     prepos = np.array([3*h/2, w/2])
@@ -1764,7 +1825,7 @@ class wxGui(wx.Frame):
         # ROI frames etc
         TVx1,TVy1,TVx2,TVy2,TVH,SVx1,SVy1,SVx2,SVy2,SVx3,SVy3 = ROIcoords
         cx,cy = (TVx1+TVx2)/2, (TVy1+TVy2)/2
-        boxTV = cv2.cv.BoxPoints(((cx,cy), (TVx2-TVx1, TVy2-TVy1), TVH))
+        boxTV = cv2.boxPoints(((cx,cy), (TVx2-TVx1, TVy2-TVy1), TVH))
         cv2.drawContours(frame, [np.int0(boxTV)], 0, color, thickness=2)
         cv2.rectangle(frame, (SVx1, SVy1), (SVx2, SVy2), color, thickness=2)
         cv2.line(frame, (SVx3, SVy3+20), (SVx3, SVy3-20), color) # SVx3
@@ -1819,8 +1880,8 @@ class wxGui(wx.Frame):
         if self.TrackOnline:
             cv2.drawContours(frame, TVContour, -1, color)
             cv2.drawContours(frame, SVContour, -1, color)
-        # cross hairs for position
         if tvx:
+            # cross hairs for position
             cv2.line(frame, (tvx-9,tvy), (tvx+9,tvy), color, thickness=2)
             cv2.line(frame, (tvx,tvy-9), (tvx,tvy+9), color, thickness=2)
             # update clip border when tvx is available
@@ -1841,8 +1902,13 @@ class wxGui(wx.Frame):
             cv2.line(frame, (xinf,yinf-9), (xinf,yinf+9), color)
 
         if headx:  # TVx1,TVy1,TVx2,TVy2
-            cv2.circle(frame, (int(x0),int(y0)), 3, color2, 2)
-            cv2.circle(frame, (int(headx),int(heady)), 12, color2, 2)
+            if self.net:
+                cv2.circle(frame, (int(x0),int(y0)), 6, (0,225,200), 2)
+                cv2.line(  frame, (int(x0),int(y0)), (int(headx),int(heady)), (0,225,200))
+                cv2.circle(frame, (int(headx),int(heady)), 9, (0,225,200), 2)
+            else:
+                cv2.circle(frame, (int(x0),int(y0)), 5, color2, 2)
+                cv2.circle(frame, (int(headx),int(heady)), 12, color2, 2)
         
         tB = self.topBorder
         # plotting
@@ -1915,6 +1981,209 @@ class wxGui(wx.Frame):
                     cv2.line(frame, (SVx1,ringAppearochLevel), (SVx2,ringAppearochLevel), color2)
 
         return frame
+
+
+
+
+    # methods relating dnn models
+    def OnModelSelect(self, event):
+        
+        _id = event.GetId()
+        fish = self.targetfish.GetStringSelection()
+
+        if _id == 400:   # deselect model
+            self.net = None
+        
+        elif _id == 399:
+            training = (self.TVtracking[fish][:,5]==2).nonzero()[0]
+            if self.net is not None and fish not in ('mog', 'all', 'temp'): # train model
+                print 'train model for frame#: ', training
+                self.dnnTrain(training, fish)
+            else:
+                print 'load a model first... we need to know bboxLength (eg. default=96)'
+
+
+        elif _id == 398:
+            dlg = wx.FileDialog( self, message="Export weights or pickle model as ...", defaultDir='models/lasagne', 
+                    defaultFile="model.npz", wildcard="npz (*.npz)|*.npz|pickle (*.pickle)|*.pickle", style=wx.SAVE )
+            if dlg.ShowModal() == wx.ID_OK:
+                fp = dlg.GetPath()
+                if fp.endswith('pickle'):
+                    print 'Pickle the model...'
+                    with open(fp, 'wb') as f:
+                        pickle.dump(self.net, f, -1)
+
+                else:
+                    print 'Export weights...'
+                    best_weights = self.net.get_all_params_values()
+                    with open(fp, 'wb') as f:
+                        pickle.dump(best_weights, f)
+
+                dlg.Destroy()
+                print 'done'
+
+        elif _id != 399:
+            name, _path = self.fishmodels[_id]
+            dlg = wx.MessageDialog(self, 'A giantic dnn model will be loaded. Please wait!', style=wx.OK)
+            if dlg.ShowModal() == wx.ID_OK:
+                dlg.Destroy()
+            if _path.endswith('.py'):
+                py_mod = imp.load_source('get_model', _path)
+                self.net = py_mod.get_model()
+                self.bboxLength = py_mod.bboxLength
+                self.trained_w_fg = py_mod.trained_w_fg
+            else:
+                with open(_path, 'rb') as f:
+                    tmp = pickle.load(f)
+                    _key = tmp.keys()[0]
+                    self.net = tmp[_key]
+                    if _path.split('.pickle')[-2].endswith('fg'):
+                        self.trained_w_fg = True
+                    else:
+                        self.trained_w_fg = False
+
+                _shape = self.net.get_all_layers()[0].shape
+                if _shape[0] is None:
+                    self.bboxLength = int(np.sqrt(_shape[1]))
+                else:
+                    self.bboxLength = _shape[-1]
+
+            print 'Fish head/chest detector dnn model (%s, bbox=%dx%d) has been loaded.' % (name, self.bboxLength, self.bboxLength)
+
+            dlg = wx.MessageDialog(self, 'Loading done!', style=wx.OK)
+            if dlg.ShowModal() == wx.ID_OK:
+                dlg.Destroy()
+
+            registeredfish = [f for f in self.choiselist if f not in ('temp', 'mog', 'all')]
+
+    def dnnPrepareInput(self, fish, frame, ROIcoords, TVpos):
+        
+        # clip out 96x96. bboxLength defined in models (96 for net1 and net6)
+        TVx1,TVy1,TVx2,TVy2,TVH,SVx1,SVy1,SVx2,SVy2,SVx3,SVy3 = ROIcoords
+        x,y = TVpos  # head coords from prepos (avg of recent 3 frames) or tracking data
+        bboxLength = self.bboxLength
+
+        # limit clip range to be within the Top View ROI
+        if   x - bboxLength/2 < TVx1:
+            bboxTLx = TVx1 
+            bboxBRx = TVx1 + bboxLength
+        elif x + bboxLength/2 > TVx2: 
+            bboxBRx = TVx2
+            bboxTLx = TVx2 - bboxLength
+        else: # if enough room, center at x,y
+            bboxTLx = int(np.floor(x - bboxLength/2))
+            bboxBRx = int(np.ceil(x + bboxLength/2 +1))
+            d = (bboxBRx-bboxTLx) - bboxLength
+            if d: # sometime rounding affect size. guarantee 96 pixels
+                bboxBRx -= d
+        
+        if   y - bboxLength/2 < TVy1:
+            bboxTLy = TVy1 
+            bboxBRy = TVy1 + bboxLength
+        elif y + bboxLength/2 > TVy2: 
+            bboxBRy = TVy2
+            bboxTLy = TVy2 - bboxLength
+        else:
+            bboxTLy = int(np.floor(y - bboxLength/2))
+            bboxBRy = int(np.ceil(y + bboxLength/2 +1))
+            d = (bboxBRy-bboxTLy) - bboxLength
+            if d:
+                bboxBRy -= d
+        
+        # X_test (96x96 video clip, no histogram equalization, mean subtraction etc but normalized to [0,1] range)
+        if self.trained_w_fg:
+            img = cv2.subtract( self.bg[bboxTLy:bboxBRy, bboxTLx:bboxBRx],
+                                frame[bboxTLy:bboxBRy, bboxTLx:bboxBRx,0].astype(np.int)).copy()
+            img[img<1] = 0
+            
+            X_test = img.astype(np.float32).copy()
+            img = np.tile(img[:,:,np.newaxis], (1,1,3)).astype(np.uint8) # bring back to BGR for drawing
+
+        else:
+            img = frame[bboxTLy:bboxBRy, bboxTLx:bboxBRx, :].copy() # dtype: unit8
+            X_test = img[:,:,0].astype(np.float32)
+        
+        # print img.shape, img.dtype, img.min(), img.max()
+
+        # X_test = img.astype(np.float32)
+
+        if self.net.get_all_layers()[0].input_var.ndim == 2:
+            X_test = X_test.reshape((1, bboxLength**2)) / 255. # not conv net, needing flat vector input
+        else: # ndim should be 4
+            X_test = X_test.reshape((1, 1, bboxLength, bboxLength)) / 255.
+        
+        return X_test, img, bboxTLx, bboxTLy
+    
+    def dnnPredict(self, fish, frame, ROIcoords, TVpos):
+
+        X_test, img, bboxTLx, bboxTLy = self.dnnPrepareInput(fish, frame, ROIcoords, TVpos)
+        bboxLength = self.bboxLength
+
+        # y_pred
+        hx, hy, cx, cy = bboxLength * self.net.predict(X_test)[0,:] # batchsize=1
+        
+        # drawing detection        
+        cv2.circle(img, (hx,hy), 5, (0,225,200))
+        cv2.line(img, (hx,hy), (cx,cy), (0,125,200), thickness=2)
+
+        cv2.imshow('dnn model for '+fish, cv2.resize(img, (bboxLength*3,bboxLength*3)))
+
+        return map(int, (cx+bboxTLx, cy+bboxTLy, hx+bboxTLx, hy+bboxTLy))
+
+    def dnnTrain(self, trainingFrames, fish):
+
+        cx = self.TVtracking[fish][:,0]
+        cy = self.TVtracking[fish][:,1]
+        hx = self.TVtracking[fish][:,3]
+        hy = self.TVtracking[fish][:,4]
+        bboxLength = self.bboxLength
+        ROIcoords = self.ROIcoords[fish]
+        N = trainingFrames.size
+
+        if self.net.get_all_layers()[0].input_var.ndim == 2:
+            X_train = np.zeros((N, bboxLength**2)) # gray scale only, no convolution
+        else: # ndim should be 4
+            X_train = np.zeros((N, 1, bboxLength, bboxLength))
+        y_train = np.zeros((N, 4))
+
+        for nn, n in enumerate(trainingFrames):
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, n-1)
+            ret, frame = self.cap.read()
+            X, img, bboxTLx, bboxTLy = self.dnnPrepareInput(fish, frame, ROIcoords, (cx[n], cy[n]))
+            if self.net.get_all_layers()[0].input_var.ndim == 2:
+                X_train[nn,:] = X[0,:]
+            else:
+                X_train[nn,:,:,:] = X[0,:,:,:]
+
+            y_train[nn,:] = (hx[n] - bboxTLx) / bboxLength, (hy[n] - bboxTLy) / bboxLength, \
+                            (cx[n] - bboxTLx) / bboxLength, (cy[n] - bboxTLy) / bboxLength
+        
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.float32)
+        # print y_train
+
+        # bring the frame position back
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.curframe)
+        
+        
+        dlg = wx.MessageDialog(self, 
+            "Train the selected model with these training data (N=%d)?" % X_train.shape[0], style=wx.YES_NO)
+        if dlg.ShowModal() == wx.ID_YES:
+            print 'start training...'
+            self.net.max_epochs = N
+            self.net.fit(X_train, y_train)
+            print 'done'
+            dlg.Destroy()
+            return
+        
+        fname = os.path.basename(self.fp)[:-4]
+
+        dlg = wx.FileDialog( self, message="Save training data file as ...", defaultDir='models/lasagne', 
+                defaultFile="fishheadxy-train-%s-%s.npz" % (fname, fish), wildcard="npz (*.npz)|*.npz", style=wx.SAVE )
+        if dlg.ShowModal() == wx.ID_OK:
+            fp = dlg.GetPath()
+            np.savez(fp, X_train=X_train, y_train=y_train)
+            dlg.Destroy()
 
 
 if __name__ == '__main__':

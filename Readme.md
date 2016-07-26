@@ -1,24 +1,42 @@
 TopSideMonitor: fish behavior recording and tracking
 ====================================================
 
-TopSideMonitor is a python program used for recording and anylysis of zebrafish olfactory conditioning behavior (a paper in preparation). TopSideMonitor uses two webcams to track fish in 3D (Top view and Side view).
+TopSideMonitor is a python program used for recording and anylysis of zebrafish olfactory conditioning behavior (a paper in preparation). TopSideMonitor uses two webcams (or FireWire camera) to track fish in 3D (Top view and Side view). TopSideMonitor can optionally train and use Theano/lasagne based deep learning model to head and chest coordinate estimation.
 
 #Installation
 
 Tested on Python 2.7 series on Windows 7. 
 
-Install dependencies: numpy, scipy, wxpython, opencv, matplotlib, xlrd, xlwt.
+Install dependencies: numpy, scipy, scikit-image, wxpython, matplotlib, xlrd, xlwt, opencv
 
 This can be done by miniconda command below:
 
-```conda create -n topside python=2.7 matplotlib scipy scipy wxpython xlrd xlwt```
+```
+using Miniconda3 as example
+
+conda create -n topside python=2.7 matplotlib scipy scikit-image wxpython xlrd xlwt
+activate topside (or source activate topside on Linux/Mac)
+conda install -c https://conda.anaconda.org/menpo opencv3
+```
 
 Copy some reasonably new ffmpeg.exe binary into resourse folder.
 
-(Optional)
-For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
+(Optional, for a FireWire camera)
 
+Install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
 
+(Optional, for lasagne based deep learning tracking model)
+
+Instructions here are for without GPU support. You will need to follow instructions given in Theano website for CUDA toolkit/GPU support.
+
+```
+activate topside (or source activate topside on Linux/Mac)
+conda install mingw libpython
+pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+pip install https://github.com/Lasagne/Lasagne/archive/master.zip
+```
+
+And then, install TDM GCC and optionally CUDA toolkit as explained in http://deeplearning.net/software/theano/install_windows.html
 
 
 #How to use
@@ -46,6 +64,10 @@ For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/proj
 
        1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
        2. Menu Alysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
+
+* deep learning models
+
+    Under models\lasagne folder, put a py file with the file name starting with prefix "fishmodel_" in which you can define a neural network for tracking. Follow the example model "fishmodel_nouriNet6.py" for details. 
 
 
 License
