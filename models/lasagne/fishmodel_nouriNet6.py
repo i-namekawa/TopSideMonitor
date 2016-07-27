@@ -7,6 +7,14 @@ import theano
 bboxLength = 96
 trained_w_fg = False # indicate that the model is trained on foreground images (median background subtracted)
 
+'''
+these functions and the model were taken from Daniel Nouri's excellent 
+theano/lasagne tutorial at 
+
+http://danielnouri.org/notes/2014/12/17/using-convolutional-neural-nets-to-detect-facial-keypoints-tutorial/
+
+and slightly modified and trained with ~1400 frames.
+'''
 
 def float32(k):
     return np.cast['float32'](k)
@@ -71,8 +79,7 @@ def get_model():
         verbose=1,
         )
 
-    # now reboot with cpu mode and initialize net6 and do this
-    # path is relative to multitrack.py which will import this module
+    # the path is relative to multitrack.py which will import this module
     best_weights = np.load('models/lasagne/best_weights_nouriNet6.pickle')['best_weights']
     net6.load_params_from(best_weights)
 

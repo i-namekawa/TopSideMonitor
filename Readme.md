@@ -1,25 +1,25 @@
-TopSideMonitor: fish behavior recording and tracking
+TopSideMonitor: fish behavior recording and 3D tracking
 ====================================================
 
-TopSideMonitor is a python program used for recording and anylysis of zebrafish olfactory conditioning behavior (a paper in preparation). TopSideMonitor uses two webcams (or FireWire camera) to track fish in 3D (Top view and Side view). TopSideMonitor can optionally train and use Theano/lasagne based deep learning model to head and chest coordinate estimation.
+TopSideMonitor is a python program used for recording and anylysis of zebrafish olfactory conditioning behavior (a paper in preparation). TopSideMonitor uses two webcams (or FireWire camera) to track fish in 3D (Top view and Side view). TopSideMonitor can optionally use Theano/lasagne based deep learning model to head and chest coordinate estimation (for orientation).
 
 #Installation
 
-Tested on Python 2.7 series on Windows 7. 
+Tested on anaconda Python 2.7 64 bit series on Windows 7. 
 
 Install dependencies: numpy, scipy, scikit-image, wxpython, matplotlib, xlrd, xlwt, opencv
 
 This can be done by miniconda command below:
 
 ```
-using Miniconda3 as example
+(using Miniconda3 as example)
 
 conda create -n topside python=2.7 matplotlib scipy scikit-image wxpython xlrd xlwt
+
 activate topside (or source activate topside on Linux/Mac)
+
 conda install -c https://conda.anaconda.org/menpo opencv3
 ```
-
-Copy some reasonably new ffmpeg.exe binary into resourse folder.
 
 (Optional, for a FireWire camera)
 
@@ -27,16 +27,19 @@ Install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
 
 (Optional, for lasagne based deep learning tracking model)
 
-Instructions here are for without GPU support. You will need to follow instructions given in Theano website for CUDA toolkit/GPU support.
+Instructions here are for without GPU support. For GPU, you will need to follow instructions given in Theano website for CUDA toolkit/GPU support before installing theano/lasagne (http://deeplearning.net/software/theano/install.html). GPU is almost necessary for training phase (x10-x100 times faster with CUDA compute capability 3.0 and above) but may not be needed for test/prediction phase. 
 
 ```
 activate topside (or source activate topside on Linux/Mac)
+
 conda install mingw libpython
+
 pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+
 pip install https://github.com/Lasagne/Lasagne/archive/master.zip
 ```
 
-And then, install TDM GCC and optionally CUDA toolkit as explained in http://deeplearning.net/software/theano/install_windows.html
+And then, on Windows, install TDM GCC as explained in http://deeplearning.net/software/theano/install_windows.html
 
 
 #How to use
@@ -65,9 +68,9 @@ And then, install TDM GCC and optionally CUDA toolkit as explained in http://dee
        1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
        2. Menu Alysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
 
-* deep learning models
+* models\lasagne\fishmodel_****.py (deep neural net models)
 
-    Under models\lasagne folder, put a py file with the file name starting with prefix "fishmodel_" in which you can define a neural network for tracking. Follow the example model "fishmodel_nouriNet6.py" for details. 
+    Under models\lasagne folder, put a py file with the file name starting with prefix "fishmodel_" in which you can define a neural network for tracking. Follow the example model "fishmodel_nouriNet6.py" for details. The example model included will probably not perform well on different data. It would be important to train your model sufficiently with your data. Once the model is loaded into multitrack.py GUI environment, creating training data and training the model can be done in the GUI. 
 
 
 License

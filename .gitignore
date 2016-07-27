@@ -48,3 +48,6 @@ Temporary Items
 itoiori.ini
 *.pyc
 resources/ffmpeg.exe
+models/1604.01802v1.pdf
+env GPU Home.bat
+env GPU lab.bat
