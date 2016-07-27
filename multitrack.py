@@ -493,7 +493,7 @@ class wxGui(wx.Frame):
                 self.writer = cv2.VideoWriter( 
                                 self.clipfp, 
                                 # -1, # will open a dialog to choose codec
-                                # cv2.cv.FOURCC('M','J','P','G'), 
+                                # cv2.cv.FOURCC('M','J','P','G'),  # opencv2.4.*
                                 cv2.VideoWriter_fourcc('D','I','V','3'),  # 2260 kb 250 frames
                                 fps=int(self.fps), 
                                 frameSize = self.framesize[::-1], # opencv wants w,h
@@ -1594,6 +1594,7 @@ class wxGui(wx.Frame):
                     self.TVtracking[fish][n,1] = y0
                     self.TVtracking[fish][n,3] = tvx
                     self.TVtracking[fish][n,4] = tvy
+                    self.TVtracking[fish][n,5] = np.nan # not good for dnn training anymore
 
             else:
                 self.TVtracking[fish][n,:2] = (np.nan, np.nan)
