@@ -37,21 +37,25 @@ conda install mingw libpython
 pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
 
 pip install https://github.com/Lasagne/Lasagne/archive/master.zip
+
+pip install git+https://github.com/dnouri/nolearn.git@master#egg=nolearn==0.7.git
 ```
+
+At the time of writing, on Windows 7, these command will install nolearn 0.6a0.dev0 (not 0.7.git), Theano 0.8.0, Lasagne 0.2.dev1, scikit-learn 0.17.1.
 
 And then, on Windows, install TDM GCC as explained in http://deeplearning.net/software/theano/install_windows.html
 
 
 #How to use
 
-* TopSideMonitor_FrontEnd.py
+* Recording (TopSideMonitor_FrontEnd.py)
 
   - This is the GUI frontend for recording fish behavior. Run this script to get the GUI and set parameters and press [Launch] button to open two camera frame viewers.
    
   - With one of two windows clicked in, use keyboard shortcuts to control video acquisition. First, press [T] to preview foreground image to optimize the webcam setting (exposure, contrast, etc) and lighting. Press [T] again to come back to raw frame view. Once nice & stable fish foreground is obtained, press [R] to start the recording and [R] again to stop. You can set a fix amount of time or frames to record in the GUI as well. [ECS] to abort from the viewer.
 
 
-* multitrack.py
+* Tracking (multitrack.py)
 
    This is for analysing the video recorded with TopSideMonitor_FrontEnd.py. It tracks fish with a simple background subtraction method (opencv MOG) and extracts from 3D fish trajectory various parameters to characterize feeding behavior.
      
@@ -63,14 +67,24 @@ And then, on Windows, install TDM GCC as explained in http://deeplearning.net/so
        5. Press [Play/Track] to start tracking.
        6. Press [Register fish/Save] when tracking is done.
 
+      Correcting and preparing dnn training data
+
+       1. Use pull-down menu on lower left to switch from "Track online" to "Replay mode".
+       2. Press [Correct x,y] button to enable correction mode
+       3. Hold Ctrl key and click the head position.
+       4. Click the chest position (without Ctrl). These two positions define the fish orientation.
+       5. Clicking the chest position will advance the frame at the step size defined in "Frame step" spin contol. The frames that both head and chest positions are manually entered will be marked for dnn training. Doing Online tracking for these frames will remove them from training data.
+       6. When creating dnn training data, choose a large "Frame step" (e.g. 250 for 30 fps) in spin control to reduce similarity in training frames.
+
     Analyzing olfactory conditioning behavior
 
-       1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
+       1. Register events (e.g CS+, US) either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the event meta data.
        2. Menu Alysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
 
-* models\lasagne\fishmodel_****.py (deep neural net models)
+* Deep neural net models for head and chest detection (models\lasagne\fishmodel_****.py)
 
-    Under models\lasagne folder, put a py file with the file name starting with prefix "fishmodel_" in which you can define a neural network for tracking. Follow the example model "fishmodel_nouriNet6.py" for details. The example model included will probably not perform well on different data. It would be important to train your model sufficiently with your data. Once the model is loaded into multitrack.py GUI environment, creating training data and training the model can be done in the GUI. 
+    When the built-in estimator of head and chest positions in TopSideMonitor does not work well enough, you can create train a deep neural net for your video to improve detection. 
+    Under models\lasagne folder, put a .py file with the file name starting with "fishmodel_" prefix in which you can define a neural network for tracking. Take a look at the example model "fishmodel_nouriNet6.py" for details. The example pre-trained model included in TopSideMonitor may not perform well on your data. It would therefore be important to train your model with sufficient amount of your data. Once the model is loaded into multitrack.py GUI environment, creating training data and training the model can be done in the GUI. 
 
 
 License

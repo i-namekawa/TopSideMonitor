@@ -4,16 +4,18 @@ from lasagne import layers
 from nolearn.lasagne import NeuralNet
 import theano
 
-bboxLength = 96
-trained_w_fg = False # indicate that the model is trained on foreground images (median background subtracted)
+usePretrained = True # Set this False if you want to train this model freshly from your data only
+bboxLength = 96      # size of bounding box (96 x 96 by default)
+trained_w_fg = False # indicate that the model should be trained on foreground images (median background subtracted)
 
 '''
-these functions and the model were taken from Daniel Nouri's excellent 
+These functions and the model were taken from Daniel Nouri's excellent 
 theano/lasagne tutorial at 
 
 http://danielnouri.org/notes/2014/12/17/using-convolutional-neural-nets-to-detect-facial-keypoints-tutorial/
 
-and slightly modified and trained with ~1400 frames.
+and slightly modified and trained with ~1700 frames from 5 fish. 
+Amoung other variants including a CaffeNet like larger conv net, this performed the best for me.
 '''
 
 def float32(k):
@@ -36,7 +38,7 @@ class AdjustVariable(object):
 
 
 def get_model():
-    'danielnouri.org/notes/2014/12/17/using-convolutional-neural-nets-to-detect-facial-keypoints-tutorial/#dropout'
+
     net6 = NeuralNet(
         layers=[
             ('input', layers.InputLayer),
@@ -80,7 +82,8 @@ def get_model():
         )
 
     # the path is relative to multitrack.py which will import this module
-    best_weights = np.load('models/lasagne/best_weights_nouriNet6.pickle')['best_weights']
-    net6.load_params_from(best_weights)
+    if usePretrained:
+        best_weights = np.load('models/lasagne/best_weights_nouriNet6.pickle')['best_weights']
+        net6.load_params_from(best_weights)
 
     return net6
