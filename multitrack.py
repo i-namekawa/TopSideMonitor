@@ -1659,7 +1659,7 @@ class wxGui(wx.Frame):
                             ind_slope = int(ov.size/4*3)
                         # democratic decision
                         # print [ind_max, ind_diff, ind_slope]
-                        head_ind = np.median([ind_max, ind_diff, ind_slope])
+                        head_ind = int(np.median([ind_max, ind_diff, ind_slope]))
 
                         headx = X[head_ind] + TVx1
                         heady = Y[head_ind] + TVy1
