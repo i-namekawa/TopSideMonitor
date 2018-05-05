@@ -3,7 +3,7 @@ TopSideMonitor: fish behavior recording and tracking
 
 TopSideMonitor is a python program for recording and anylyzing adult zebrafish behavior developed for our study ["Rapid olfactory discrimination learning in adult zebrafish"](https://www.biorxiv.org/content/early/2018/05/04/314849). TopSideMonitor uses two orthogonal webcams to track fish in 3D (Top view and Side view) and extract various parameters (xyz trajectory, swimming speed, water surface sampling, distance to a point of interest etc) useful to characterize fish behaviors.
 
-#Installation
+# Installation
 
 Tested on Python 2.7 series on Windows 7. 
 
@@ -21,7 +21,7 @@ For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/proj
 
 
 
-#How to use
+# How to use
 
 * TopSideMonitor_FrontEnd.py
 
