@@ -1,7 +1,7 @@
 TopSideMonitor: fish behavior recording and tracking
 ====================================================
 
-TopSideMonitor is a python program for recording and analyzing adult zebrafish behavior developed for our study ["Rapid olfactory discrimination learning in adult zebrafish" Namekawa et al (2018) Experimental Brain Research](https://rdcu.be/4bM2). TopSideMonitor uses two orthogonal webcams (Top and Side views) to track fish in 3D and extract various parameters (xyz trajectory, swimming speed, water surface sampling, distance to a point of interest etc) useful to characterize fish behaviors.
+TopSideMonitor is a python program for recording and analyzing adult zebrafish behavior developed for our study ["Rapid olfactory discrimination learning in adult zebrafish", Namekawa et al (2018), Experimental Brain Research](https://rdcu.be/4bM2). TopSideMonitor uses two orthogonal webcams (Top and Side views) to track fish in 3D and extract various parameters (xyz trajectory, swimming speed, water surface sampling, distance to a point of interest etc) useful to characterize fish behaviors.
 
 # Installation
 
@@ -12,13 +12,11 @@ Install dependencies: numpy, scipy, wxpython (v2.8.12), opencv (v2.4.11), matplo
 This can be done by miniconda commands below:
 
 ```
-conda create -n topside27 python=2.7
+conda create -n topside27 python=2.7 scipy matplotlib xlrd xlwt
 
 conda install -c krisvanneste wxpython
 
-conda install scipy matplotlib xlrd xlwt
-
-conda install -c krisvanneste wxpython
+conda install -c menpo opencv
 ```
 
 Copy some reasonably new ffmpeg.exe binary into resourse folder.
@@ -26,12 +24,7 @@ Copy some reasonably new ffmpeg.exe binary into resourse folder.
 (Optional)
 For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
 
-
-
-
-
-
-
+Once installed, activate the conda environment by `conda activate topside27` from Anaconda prompt and then start the script by `python TopSideMonitor_FrontEnd.py` for recording and by `python multitrack.py for analysis`.
 
 
 # How to use
