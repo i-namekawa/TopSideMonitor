@@ -24,7 +24,7 @@ Copy some reasonably new ffmpeg.exe binary into resourse folder.
 (Optional)
 For a FireWire camera, install motmot.cam_iface from http://code.astraw.com/projects/motmot/.
 
-Once installed, activate the conda environment by `conda activate topside27` from Anaconda prompt and then start the script by `python TopSideMonitor_FrontEnd.py` for recording and by `python multitrack.py for analysis`.
+Once installed, activate the conda environment by `conda activate topside27` from Anaconda prompt and then start the script by `python TopSideMonitor_FrontEnd.py` for recording and by `python multitrack.py` for analysis.
 
 
 # How to use

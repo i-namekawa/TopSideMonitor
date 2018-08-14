@@ -146,7 +146,7 @@ class wxGui(wx.Frame):
         self.fishname.SetDescriptiveText('Type in fish name here and register')
         self.fishname.ShowSearchButton(False)
         self.savebtn = wx.Button(self, label='Register fish/Save', style=wx.BU_EXACTFIT)
-        self.removebtn = wx.Button(self, label='MS222', style=wx.BU_EXACTFIT)
+        self.removebtn = wx.Button(self, label='Remove', style=wx.BU_EXACTFIT)
         self.choiselist = []
         self.targetfish = wx.Choice(self, choices = self.choiselist)
         
@@ -587,7 +587,7 @@ class wxGui(wx.Frame):
         dlg = wx.FileDialog(self, message="Open files...",
                 defaultDir=os.getcwd(), #defaultFile=fp,
                 wildcard='Avi files (*.avi)|*.avi',
-                style=wx.OPEN | wx.CHANGE_DIR )
+                style=wx.FD_OPEN | wx.FD_CHANGE_DIR )
         if dlg.ShowModal() == wx.ID_OK:
             fp = dlg.GetPath()
             self.LoadAvi(None, fp)
