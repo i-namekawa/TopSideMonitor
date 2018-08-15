@@ -247,7 +247,7 @@ def approachevents(x,y,z, ringpolyTVArray, ringpolySVArray, fishlength=134, thrs
     '''
     fishlength: some old scrits may call this with fishlength
     thrs: multitrack GUI provides this by ringAppearochLevel spin control. 
-          can be an numpy array (water level change etc)
+          can be an numpy array (to track water level change etc)
     '''
 
     smoothedz = np.convolve(np.hanning(10)/np.hanning(10).sum(), z, 'same')
@@ -977,38 +977,6 @@ if __name__ == '__main__':
     # small test data
     # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Aug4/test', pickle_files)
     # outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Aug4/test'
-
-    # NeuroD fish Aug4
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Aug4/2015-08-04', pickle_files)
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Aug4/2015-08-05', pickle_files)
-    # outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Aug4'
-    
-    # IN24 fish
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/IN24/2015-09-30', pickle_files)
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/IN24/2015-10-01', pickle_files)
-    # outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/IN24'
-
-    # IN25 2days
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/IN25 2days/2015-09-03', pickle_files)
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/IN25 2days/2015-09-04', pickle_files)
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/IN25 2days/2015-09-08', pickle_files)
-    # outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/IN25 2days'
-
-    # Cys Ala experiment summary
-    # (1) IN10 2 females apetitive  CS+: L-ala 3x10-5M CS-: L-cys 3x10-5M
-    # analyzed in old script, not by multitrack.py? no pickle found
-    # (2) appetitive 2nd set        CS+: L-cys 3x10-5M CS-: L-ala 3x10-5M
-    # analyzed in old script, not by multitrack.py? no pickle found
-    # (3) NeuroD Nov3               CS+: L-cys 3x10-5M CS-: L-ala 3x10-5M
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Nov3/2015-11-03', pickle_files)
-    # add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Nov3/2015-11-04', pickle_files)
-    # outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/NeuroD/Nov3'
-    # (4) Chie Nov05-12             CS+: L-cys 3x10-5M CS-: L-ala 3x10-5M
-    add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/Chie/2015-11-10', pickle_files)
-    add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/Chie/2015-11-11', pickle_files)
-    add2Pickles('R:/Data/itoiori/behav/adult whitlock/conditioning/Chie/2015-11-12', pickle_files)
-    outputdir = 'R:/Data/itoiori/behav/adult whitlock/conditioning/Chie'
-    # N=8
 
     # show me what you got
     for pf in pickle_files:

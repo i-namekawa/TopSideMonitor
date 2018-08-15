@@ -60,7 +60,6 @@ class UserInput(wx.Frame):
         self.datafolder = wx.TextCtrl(self, -1, datafolder, size=(260,-1), style=wx.TE_CENTER)
         self.datafolder.SetToolTip(wx.ToolTip(self.datafolder.GetValue()))
         
-        #self.skipframe = wx.TextCtrl(self, -1, '%2.2f'%(float(camerafps)/float(videofps)), size=(80, -1), style=wx.TE_READONLY|wx.TE_RIGHT)
         self.textOn = wx.CheckBox(self, -1, 'Show text?' )
         self.textOn.SetValue(textOn)
         self.textpos = wx.TextCtrl(self, -1, textpos, size=(80, -1), style=wx.TE_RIGHT)
@@ -105,8 +104,6 @@ class UserInput(wx.Frame):
         gbs.Add( self.camerafps, (4,1), flag=wx.ALIGN_RIGHT)
         gbs.Add( wx.StaticText(self, -1, 'Video FPS' ), (4,2), flag=wx.ALIGN_CENTER )
         gbs.Add( self.videofps, (4,3), flag=wx.ALIGN_LEFT)
-        #gbs.Add( wx.StaticText(self, -1, 'Every n frame' ), (5,0), flag=wx.ALIGN_CENTER )
-        #gbs.Add( self.skipframe, (5,1), flag=wx.ALIGN_RIGHT)
 
         gbs.Add( self.textOn, (1,2) , span=(1,2), flag=wx.ALIGN_CENTER )
         gbs.Add( wx.StaticText(self, -1, 'Text 8-bit color' ), (2,2), flag=wx.ALIGN_CENTER )
@@ -128,8 +125,6 @@ class UserInput(wx.Frame):
         gbs.Add( self.folderbtn, (6,1), span=(1,2), flag=wx.ALIGN_CENTER )
         gbs.Add( self.exitbtn, (6,3), span=(1,1), flag=wx.ALIGN_CENTER )
 
-        #self.err = wx.TextCtrl(self, -1, '', size=(275,200), style=wx.TE_READONLY|wx.TE_RIGHT)
-        #sys.stderr = RedirectText(self.err)
         self.OnTextCheck(None)
 
         self.LED = gizmos.LEDNumberCtrl(self, -1, (25,100), (280, 50))
