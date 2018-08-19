@@ -4,12 +4,13 @@ TopSideMonitor: fish behavior recording and tracking
 TopSideMonitor is a python program for recording and analyzing adult zebrafish behavior developed for our study ["Rapid olfactory discrimination learning in adult zebrafish" Namekawa et al (2018) Experimental Brain Research](https://rdcu.be/4bM2). TopSideMonitor uses two orthogonal webcams (Top and Side views) to track fish in 3D and extract various parameters (xyz trajectory, swimming speed, water surface sampling, distance to a point of interest etc) useful to characterize fish behaviors.
 
 ![Tracking](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/tracking.jpg)
+
 `TopSideMonitor_FrontEnd.py` stacks top and side views in one video and `multitrack.py` can track multiple fish in one video.
 
 # Installation
 
+For Windows 7 users, binary files are available from the `release tab` at github. For Window 10, follow the instructions below.
 
-Tested on Python 2.7 series on Windows 7/10. 
 
 Install dependencies: numpy (v1.9.2), scipy (v0.15.1), wxpython (v2.8.12), opencv (v2.4.12), matplotlib (v1.4.3), xlrd, xlwt.
 
@@ -33,7 +34,7 @@ Extract and copy `cv2.pyd` in `opencv\build\python\2.7\x64` to `site-packages` o
 
 Copy everything (all starting with `opencv_`) in `opencv\biold\x64\vc12` folder to the `site-packages`.
 
-Copy `opencv_ffmpeg2412_64.dll` in `opencv\biold\x64\vc12` next to your conda `python.exe` (i.e., `miniconda3\envs\topside27` folder, two levels above `site-packages`).
+Copy `opencv_ffmpeg2412_64.dll` in `opencv\build\x64\vc12` next to your conda `python.exe` (i.e., `miniconda3\envs\topside27` folder, two levels above `site-packages`).
 
 (Optional)
 When using a FireWire camera, install `motmot.cam_iface` from http://code.astraw.com/projects/motmot/.
@@ -55,20 +56,21 @@ Once installed, activate the conda environment by `conda activate topside27` fro
 
 * multitrack.py
 
-   This is for analysing the video generated with TopSideMonitor_FrontEnd.py. It tracks fish with a simple background subtraction method (opencv MOG) and extracts from 3D fish trajectory various parameters to characterize feeding behavior.
+  This is for analysing the video generated with TopSideMonitor_FrontEnd.py. It tracks fish with a simple background subtraction method (opencv MOG) and extracts from 3D fish trajectory various parameters to characterize feeding behavior.
      
-     Tracking
-       1. Open a video file from Menu File -> Open or just drag and drop it.
-       2. Register a fish name (eg. GCaMP6_fish01) and [Register fish/Save] and choose it from the pull down menu on right. You can use [Remove] button to remove the wrong entry.
-       3. Set ROI for TopView by adjusting parameters starting with TV (Top View). Repeat this for Side View.
-       4. If more than one fish is in the video, you can repeat 2 and 3 to regisrer more.
-       5. Press [Play/Track] to start tracking.
-       6. Press [Register fish/Save] when tracking is done.
+  Tracking
 
-    Analyzing olfactory conditioning behavior
+    1. Open a video file from Menu File -> Open or just drag and drop it.
+    2. Register a fish name (eg. GCaMP6_fish01) and [Register fish/Save] and choose it from the pull down menu on right. You can use [Remove] button to remove the wrong entry.
+    3. Set ROI for TopView by adjusting parameters starting with TV (Top View). Repeat this for Side View.
+    4. If more than one fish is in the video, you can repeat 2 and 3 to regisrer more.
+    5. Press [Play/Track] to start tracking.
+    6. Press [Register fish/Save] when tracking is done.
 
-       1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
-       2. Menu Analysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
+  Analyzing olfactory conditioning behavior
+
+    1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
+    2. Menu Analysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
 
 
 License
