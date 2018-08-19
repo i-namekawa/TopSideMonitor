@@ -44,17 +44,17 @@ When using a FireWire camera, install `motmot.cam_iface` from http://code.astraw
 
 Once installed, activate the conda environment by `conda activate topside27` from Anaconda prompt and then start the script by `python TopSideMonitor_FrontEnd.py` for recording and by `python multitrack.py` for analysis.
 
-![Recording FrontEnd](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/recGUI.jpg)
-
 ## TopSideMonitor_FrontEnd.py
+
+![Recording FrontEnd](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/recGUI.jpg)
 
 - This is the GUI frontend for recording fish behavior. Run this script to set the recording parameters in GUI and press [Launch] button to open two camera frame viewers.
    
 - With one of two frame viewers clicked, use keyboard shortcuts to control video acquisition. First, press `T` to preview foreground image to optimize the webcam setting (exposure, contrast, etc) and lighting. Once nice & stable fish foreground is obtained, press `T` again to come back to raw frame view. Now, press `R` to start the recording and `R` again to stop. You can set a fix amount of time or frames to record in the GUI as well. `ECS` will close and exit from the viewer.
 
-![Tracking tool](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/multitrackGUI.jpg)
-
 ## multitrack.py
+
+![Tracking tool](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/multitrackGUI.jpg)
 
 This is for analysing the video generated with TopSideMonitor_FrontEnd.py. It tracks fish with a simple background subtraction method (opencv MOG) and extracts from 3D fish trajectory various parameters to characterize feeding behavior.
      
