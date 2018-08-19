@@ -1790,7 +1790,7 @@ class wxGui(wx.Frame):
         else:
             TVx, TVy = None, None
 
-        # swim direction
+        # swim direction (not accurate. dont use)
         if self.ringpolySVArray[fish] is not None:
             rz = self.ringpolySVArray[fish][n,1].astype(np.int)
             dt = 3

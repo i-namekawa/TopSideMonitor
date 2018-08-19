@@ -12,7 +12,7 @@ TopSideMonitor is a python program for recording and analyzing adult zebrafish b
 For Windows 7 users, binary files are available from the `release tab` at github. For Window 10, follow the instructions below.
 
 
-Install dependencies: numpy (v1.9.2), scipy (v0.15.1), wxpython (v2.8.12), opencv (v2.4.12), matplotlib (v1.4.3), xlrd, xlwt.
+Install dependencies: numpy (v1.9.2), scipy (v0.15.1), wxpython (v2.8.12), opencv (v2.4.12), matplotlib (v1.4.3), xlrd, xlwt. These specific library versions are all important.
 
 The most libraries can be installed by miniconda commands below:
 
@@ -61,16 +61,23 @@ Once installed, activate the conda environment by `conda activate topside27` fro
   Tracking
 
     1. Open a video file from Menu File -> Open or just drag and drop it.
-    2. Register a fish name (eg. GCaMP6_fish01) and [Register fish/Save] and choose it from the pull down menu on right. You can use [Remove] button to remove the wrong entry.
-    3. Set ROI for TopView by adjusting parameters starting with TV (Top View). Repeat this for Side View.
-    4. If more than one fish is in the video, you can repeat 2 and 3 to regisrer more.
-    5. Press [Play/Track] to start tracking.
-    6. Press [Register fish/Save] when tracking is done.
+    2. Register a fish name (eg. Fish01) and `Register fish/Save` and choose it from the pull down menu on right. You can use `Remove` button to remove the wrong entry.
+    3. Set ROI for TopView by adjusting parameters starting with TV (Topleft x1,y1; Bottomright x2,y2). 
+    4. Set 6 parameters for Side View starting with SV (Topleft x1,y1; Bottomright x2,y2; outside corner of the other wall x3,y3).
+    5. Set TV/SV noise blob size in pixels. Anything below this size will be discarded as noise blobs.
+    6. Clock on `InflowTubes` and click a point inside Top View ROI and a point inside Side View ROI. This defines a point of interest to measure distance from fish.
+    7. Click on `TopView ring` or `SideView ring` and draw a polygon around the feeding circle (8 points).
+    8. (Option) TV ROI Head can rotate the Top View ROI if needed.
+    9. If more than one fish is in the video, you can repeat 2 and 8 to regisrer more.
+    10. Press `Play/Track` to start tracking.
+    11. Press `Register fish/Save` when tracking is done.
 
   Analyzing olfactory conditioning behavior
 
-    1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag and drop an excel file will overwrite the events.
-    2. Menu Analysis -> Create PDF report to get a PDF summary of this analysis and npz file containing tracking data and analysis results.
+    After the tracking is done for the portion of video that you are interested in, you can register events and obtain various behavior parameters around events.
+
+    1. Register events either using the GUI (not recommended) or by preparing an excel sheet. First collumn is fish name, 2nd is event label, 3rd is the event frame number (refer to example_event_sheet.xlsx) and drag/drop the excel file on GUI will overwrite the events.
+    2. Menu Analysis -> Create PDF report to get a PDF summary of this analysis and npz/mat file containing tracking data and analysis results.
 
 
 License
