@@ -70,8 +70,9 @@ This is for analysing the video generated with TopSideMonitor_FrontEnd.py. It tr
 8. (Optional) TV ROI Head can rotate the Top View ROI if needed.
 9. If more than one fish is in the video, you can repeat 2 and 8 to regisrer more.
 10. Set MOG parameters: history, nmixtures, backgroundRatio, noiseSigma, learningRate (c.f. [opencv doc](https://docs.opencv.org/2.4/modules/video/doc/motion_analysis_and_object_tracking.html#backgroundsubtractormog))
-11. Press `Play/Track` to start tracking.
+11. Press `Play/Track` to start tracking. To speed up the tracking, you can close opencv window by `Close OpenCV` button.
 12. Press `Register fish/Save` when tracking is done.
+13. You can review and correct the tracking result in `replay mode` available from pull-down memu above `Play` button.
 
 ### Analyzing olfactory conditioning behavior
 
