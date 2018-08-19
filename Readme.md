@@ -32,7 +32,7 @@ For opencv, download the official binary from https://sourceforge.net/projects/o
 
 Extract and copy `cv2.pyd` in `opencv\build\python\2.7\x64` to `site-packages` of your conda environment (e.g. `C:\Users\your_user_name\AppData\Local\Continuum\miniconda3\envs\topside27\Lib\site-packages`).
 
-Copy everything (all starting with `opencv_`) in `opencv\biold\x64\vc12` folder to the `site-packages`.
+Copy everything (all starting with `opencv_`) in `opencv\build\x64\vc12` folder to the `site-packages`.
 
 Copy `opencv_ffmpeg2412_64.dll` in `opencv\build\x64\vc12` next to your conda `python.exe` (i.e., `miniconda3\envs\topside27` folder, two levels above `site-packages`).
 
@@ -50,7 +50,7 @@ Once installed, activate the conda environment by `conda activate topside27` fro
 
   - This is the GUI frontend for recording fish behavior. Run this script to set the recording parameters in GUI and press [Launch] button to open two camera frame viewers.
    
-  - With one of two frame viewers clicked, use keyboard shortcuts to control video acquisition. First, press [T] to preview foreground image to optimize the webcam setting (exposure, contrast, etc) and lighting. Once nice & stable fish foreground is obtained, press [T] again to come back to raw frame view. Now, press [R] to start the recording and [R] again to stop. You can set a fix amount of time or frames to record in the GUI as well. [ECS] will close and exit from the viewer.
+  - With one of two frame viewers clicked, use keyboard shortcuts to control video acquisition. First, press `T` to preview foreground image to optimize the webcam setting (exposure, contrast, etc) and lighting. Once nice & stable fish foreground is obtained, press `T` again to come back to raw frame view. Now, press `R` to start the recording and `R` again to stop. You can set a fix amount of time or frames to record in the GUI as well. `ECS` will close and exit from the viewer.
 
 ![Tracking tool](https://github.com/i-namekawa/TopSideMonitor/blob/master/resources/multitrackGUI.jpg)
 
